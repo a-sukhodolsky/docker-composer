@@ -7,7 +7,11 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && \
     apt-get install -y apt-utils && \
     apt-get upgrade -y && \
-    apt-get install -y zip unzip libzip-dev wget && \
+    apt-get install -y \
+        # Simplest init to be used as entrypoint
+        tini \
+        # Common utilities, some used by composer
+        zip unzip libzip-dev wget && \
     docker-php-ext-install zip && \
     apt-get autoremove -y && \
     apt-get clean && rm -r /var/lib/apt/lists/*
@@ -24,3 +28,10 @@ RUN mkdir -p /opt/bin && \
 RUN mkdir -p /app
 
 WORKDIR /app
+
+# Assume the following:
+# * we do not intend to run multiple processes
+# * we want to run main process with PID > 1
+# * we want to forward system signals to process (so, Ctrl+C should work)
+# * parent Docker image uses "docker-php-entrypoint" as entrypoint
+ENTRYPOINT ["tini", "--", "docker-php-entrypoint"]
